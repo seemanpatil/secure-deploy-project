@@ -1,6 +1,9 @@
+
 package com.example.usermanagement.error;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -17,18 +20,29 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger logger =
+            LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiError> handleValidation(MethodArgumentNotValidException ex, HttpServletRequest request) {
+    public ResponseEntity<ApiError> handleValidation(
+            MethodArgumentNotValidException ex,
+            HttpServletRequest request) {
+
         Map<String, String> fieldErrors = new LinkedHashMap<>();
 
         for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {
-            fieldErrors.putIfAbsent(fieldError.getField(), fieldError.getDefaultMessage());
+            fieldErrors.putIfAbsent(
+                    fieldError.getField(),
+                    fieldError.getDefaultMessage()
+            );
         }
 
         String message = fieldErrors.entrySet()
                 .stream()
                 .findFirst()
-                .map(entry -> readableField(entry.getKey()) + " " + entry.getValue())
+                .map(entry -> readableField(entry.getKey())
+                        + " " + entry.getValue())
                 .orElse("Please check the submitted values");
 
         ApiError error = ApiError.validation(
@@ -43,36 +57,80 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<ApiError> handleBadCredentials(BadCredentialsException ex, HttpServletRequest request) {
-        return build(HttpStatus.UNAUTHORIZED, "Invalid email or password", request);
+    public ResponseEntity<ApiError> handleBadCredentials(
+            BadCredentialsException ex,
+            HttpServletRequest request) {
+
+        return build(
+                HttpStatus.UNAUTHORIZED,
+                "Invalid email or password",
+                request
+        );
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ApiError> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
-        return build(HttpStatus.FORBIDDEN, "You do not have permission to perform this action", request);
+    public ResponseEntity<ApiError> handleAccessDenied(
+            AccessDeniedException ex,
+            HttpServletRequest request) {
+
+        return build(
+                HttpStatus.FORBIDDEN,
+                "You do not have permission to perform this action",
+                request
+        );
     }
 
     @ExceptionHandler(ResponseStatusException.class)
-    public ResponseEntity<ApiError> handleResponseStatus(ResponseStatusException ex, HttpServletRequest request) {
-        HttpStatus status = HttpStatus.valueOf(ex.getStatusCode().value());
-        String message = ex.getReason() == null || ex.getReason().isBlank()
-                ? status.getReasonPhrase()
-                : ex.getReason();
+    public ResponseEntity<ApiError> handleResponseStatus(
+            ResponseStatusException ex,
+            HttpServletRequest request) {
+
+        HttpStatus status =
+                HttpStatus.valueOf(ex.getStatusCode().value());
+
+        String message =
+                ex.getReason() == null || ex.getReason().isBlank()
+                        ? status.getReasonPhrase()
+                        : ex.getReason();
 
         return build(status, message, request);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ApiError> handleUnreadableMessage(HttpMessageNotReadableException ex, HttpServletRequest request) {
-        return build(HttpStatus.BAD_REQUEST, "Invalid request body. Check the submitted values", request);
+    public ResponseEntity<ApiError> handleUnreadableMessage(
+            HttpMessageNotReadableException ex,
+            HttpServletRequest request) {
+
+        return build(
+                HttpStatus.BAD_REQUEST,
+                "Invalid request body. Check the submitted values",
+                request
+        );
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiError> handleUnexpected(Exception ex, HttpServletRequest request) {
-        return build(HttpStatus.INTERNAL_SERVER_ERROR, "Something went wrong. Please try again", request);
+    public ResponseEntity<ApiError> handleUnexpected(
+            Exception ex,
+            HttpServletRequest request) {
+
+        logger.error(
+                "Unexpected error on path: {}",
+                request.getRequestURI(),
+                ex
+        );
+
+        return build(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "Something went wrong. Please try again",
+                request
+        );
     }
 
-    private ResponseEntity<ApiError> build(HttpStatus status, String message, HttpServletRequest request) {
+    private ResponseEntity<ApiError> build(
+            HttpStatus status,
+            String message,
+            HttpServletRequest request) {
+
         ApiError error = ApiError.of(
                 status.value(),
                 status.getReasonPhrase(),
@@ -88,6 +146,7 @@ public class GlobalExceptionHandler {
             return "Field";
         }
 
-        return field.substring(0, 1).toUpperCase() + field.substring(1);
+        return field.substring(0, 1).toUpperCase()
+                + field.substring(1);
     }
 }
