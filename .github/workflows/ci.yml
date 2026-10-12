@@ -7,6 +7,19 @@ on:
     branches: [main]
 
 jobs:
+  secret-scan:
+    name: Scan for Exposed Secrets
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+
   build:
     name: Build Spring Boot Backend
     runs-on: ubuntu-latest
