@@ -39,3 +39,29 @@ jobs:
       - name: Build and test backend
         working-directory: backend
         run: mvn --batch-mode verify
+
+  dependency-scan:
+    name: Scan Dependencies for Vulnerabilities
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Run OWASP Dependency-Check
+        uses: dependency-check/Dependency-Check_Action@main
+        env:
+          JAVA_HOME: /opt/jdk
+        with:
+          project: Secure-Deploy
+          path: backend
+          format: HTML
+          out: reports
+          args: >
+            --failOnCVSS 7
